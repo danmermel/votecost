@@ -41,12 +41,26 @@
       </v-app-bar>
       <v-main>
         <v-container fluid>
-          <v-autocomplete @update:model-value="findresults" label="Choose a constituency" :items="constituencies"
+          <v-autocomplete @update:model-value="findresults" label="Choose a constituency (start typing a name)" :items="constituencies"
             item-title="constituency" v-model="constituency"></v-autocomplete>
           <v-alert v-if="message">{{message}}</v-alert>
-          <v-data-table v-if="!nodata" hide-default-footer :items="showdata"></v-data-table>
+          <v-data-table v-if="!nodata" hide-default-footer :items="showdata" v-model:sort-by="sortBy"></v-data-table>
         </v-container>
       </v-main>
+      <v-footer class="text-center d-flex flex-column ga-2 py-4">
+        <div class="text-caption font-weight-regular">
+          <p>How much did your vote cost?</p>
+          <p>Use this site to find out how much a candidate spent in the 2024 General
+            Election, how many votes that candidate got and, therefore, how much they paid for each vote obtained.</p>
+          <strong>Sources:</strong>The UK Parliament has a record of <a
+            href=" https://electionresults.parliament.uk/general-elections/6/turnout">how many</a> votes every candidate
+          received. The Electoral Commission publishes data on <a
+            href="https://www.electoralcommission.org.uk/political-registration-and-regulation/financial-reporting/campaign-spending-candidates/2024-uk-parliamentary-general-election-candidate-spending?section=data&filters=%255B%257B%2522candidate%2522%253A%257B%2522id%2522%253A2122%252C%2522value%2522%253A%2522yuan%2520yang%2522%252C%2522label%2522%253A%2522Yuan%2520Yang%2522%252C%2522meta%2522%253A%255B%2522Labour%2520Party%2522%252C%2522Earley%2520and%2520Woodley%2522%255D%257D%257D%255D">how
+            much</a> each candidate spent.
+          To see how these data sets were combined, see the project's <a
+            href="https://github.com/danmermel/votecost">Github repository</a>.
+        </div>
+        <v-divider></v-divider>
     </v-app>
   </v-layout>
 
@@ -70,6 +84,7 @@
         const constituencies = ref([])
         const showdata = ref([])
         const nodata = ref(true)
+        const sortBy = ref([{ key: 'Position', order: 'asc' }])
 
         async function fetchconstituencies() {
           const rawResponse = await fetch(url, {
@@ -98,8 +113,7 @@
           showdata.value = (await rawResponse.json()).message.map(function (i) {
             return {
               Position: i.candidate_result_position,
-              Name: i.candidate_given_name,
-              Surname: i.candidate_family_name,
+              Candidate: `${i.candidate_given_name} ${i.candidate_family_name}`,
               Party: i.candidate_party,
               Votes: i.candidate_vote_count,
               Spending: new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(i.total_reported_spending),
@@ -112,7 +126,7 @@
 
         //hydrate constituencies
         fetchconstituencies()
-                
+
         // make state available
 
 
@@ -122,7 +136,8 @@
           findresults,
           message,
           showdata,
-          nodata
+          nodata,
+          sortBy
         }
       }
     }).use(vuetify).mount('#app')
